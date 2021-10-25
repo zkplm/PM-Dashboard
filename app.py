@@ -3,7 +3,8 @@ from werkzeug.utils import secure_filename
 import os
 app = Flask(__name__)
 
-app.config["UPLOAD_FOLDER"] = '/Users/mahip/Desktop/coding/PM-Dashboard/data'
+# app.config["UPLOAD_FOLDER"] = '/Users/mahip/Desktop/coding/PM-Dashboard/data'
+app.config["UPLOAD_FOLDER"] = '/Users/zmplu/Documents/PM-Dashboard/data'
 
 
 @app.route('/')
