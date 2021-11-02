@@ -1,5 +1,5 @@
 
-{% block title %}Upload{% endblock %}
+{% block title %} {% endblock %}
 
 {% block main %}
 
@@ -7,20 +7,25 @@
   <div class="row">
     <div class="col">
 
-      <h1>Upload an image</h1>
+      <h1>Upload File</h1>
       <hr>
 
-      <form action="/upload-image" method="POST" enctype="multipart/form-data">
+      <form action="/upload-file-" method="POST" enctype="multipart/form-data">
 
         <div class="form-group">
-          <label>Select image</label>
+          <label>Select File</label>
           <div class="custom-file">
             <input type="file" class="custom-file-input" name="image" id="image">
-            <label class="custom-file-label" for="image">Select image...</label>
+           
           </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Upload</button>
+
+      </form>
+      <form action="/back_main" method="POST" enctype="multipart/form-data">
+
+        <button type="Back" class="btn btn-primary">Back</button>
 
       </form>
 

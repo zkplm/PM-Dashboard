@@ -1,8 +1,8 @@
 
-{% block title %}Upload{% endblock %}
+{% block title %} {% endblock %}
 
 {% block main %}
-
+<html>
 <div class="container">
   <div class="row">
     <div class="col">
@@ -15,9 +15,21 @@
         <button type="Upload_file_data" class="btn btn-primary">Upload PM Data</button>
 
       </form>
+      <form action="/dash" method="POST" enctype="multipart/form-data">
 
+        <button type="View Dashboard" class="btn btn-primary">View Dashboard</button>
+
+      </form>
+      <div id='chart' class='chart'></div>
+      <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+      <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>-->
+      <script type='text/javascript'>
+        var graphs = {{graphJSON | safe}};
+        Plotly.plot('chart',graphs,{});
+      </script>
     </div>
   </div>
-</div>
 
+</div>
+</html>
 {% endblock %}
