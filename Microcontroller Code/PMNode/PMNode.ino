@@ -1,9 +1,25 @@
-// libraries
+// LIBRARIES
 // temp/humidity
-#include "DHT.h"
+#include <DHT.h>
 #define DHTTYPE DHT22
 
-// pins
+// SD
+#include <SPI.h>
+#include <SD.h>
+File myFile;
+
+// GPS
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+int GPSBaud = 9600;
+TinyGPSPlus gps;
+
+// PM
+#include <Seeed_HM330X.h>
+HM330X pmSensor;
+u8 pmBuf[30];
+
+// PINS
 #define CS_PIN PIN_PB2
 #define MOSI_PIN PIN_PB3
 #define MISO_PIN PIN_PB4
@@ -21,8 +37,12 @@
 #define GREEN_PIN PIN_PD6
 #define BLUE_PIN PIN_PD7
 
-// library setup
+// LIBRARY SETUP
+SoftwareSerial gpsSerial(GPS_OUT_PIN, GPS_IN_PIN);
 DHT dht(TEMP_PIN, DHTTYPE);
+
+// MISC
+enum frequency { five_min, one_hr, three_hr };
 
 void setup() {
   // PB
@@ -49,9 +69,13 @@ void setup() {
 
   // initialize sensors working with libraries
   dht.begin();
+  gpsSerial.begin(GPSBaud);
+  pmSensor.init();
 }
 
 void loop() {
+  // wind info is wack: https://www.youtube.com/watch?v=KHrTqdmYoAk
+  
   // Read humidity
   float h = dht.readHumidity();
   // Read temperature as Fahrenheit (isFahrenheit = true)
@@ -59,6 +83,85 @@ void loop() {
 
   if (isnan(h) || isnan(t) || isnan(f)) {
     Serial.println(F("Failed to read from DHT sensor!"));
+  }
+
+  if(!sensor.read_sensor_value(pmBuf,29)){
+    u16 value=0;
+    if(NULL==data)
+        Serial.println(F("Failed to read from PM sensor!"));;
+    for(int i=5;i<8;i++)
+    {
+         value = (u16)data[i*2]<<8|data[i*2+1];
+         // value holds PM1.0, then PM2.5, then PM10
+ 
+    }
+  }
+
+
+  // write to SD card
+  if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+
+  
+  if (gpsSerial.available() > 0 && gps.encode(gpsSerial.read())){
+    if (gps.location.isValid())
+    {
+      Serial.print("Latitude: ");
+      Serial.println(gps.location.lat(), 6);
+      Serial.print("Longitude: ");
+      Serial.println(gps.location.lng(), 6);
+      Serial.print("Altitude: ");
+      Serial.println(gps.altitude.meters());
+    }
+    else
+    {
+      Serial.println("Location: Not Available");
+    }
+    
+    Serial.print("Date: ");
+    if (gps.date.isValid())
+    {
+      Serial.print(gps.date.month());
+      Serial.print("/");
+      Serial.print(gps.date.day());
+      Serial.print("/");
+      Serial.println(gps.date.year());
+    }
+    else
+    {
+      Serial.println("Not Available");
+    }
+  
+    Serial.print("Time: ");
+    if (gps.time.isValid())
+    {
+      if (gps.time.hour() < 10) Serial.print(F("0"));
+      Serial.print(gps.time.hour());
+      Serial.print(":");
+      if (gps.time.minute() < 10) Serial.print(F("0"));
+      Serial.print(gps.time.minute());
+      Serial.print(":");
+      if (gps.time.second() < 10) Serial.print(F("0"));
+      Serial.print(gps.time.second());
+      Serial.print(".");
+      if (gps.time.centisecond() < 10) Serial.print(F("0"));
+      Serial.println(gps.time.centisecond());
+    }
+    else
+    {
+      Serial.println("Not Available");
+    }
+  }
+  
+  myFile = SD.open("data.txt", FILE_WRITE);
+  if (myFile) {
+    myFile.println("testing 1, 2, 3.");
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
   }
   
 //  // read potentiometer and rescale to 0-1s delay
