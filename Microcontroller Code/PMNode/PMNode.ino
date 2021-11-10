@@ -1,16 +1,16 @@
 // LIBRARIES
 // temp/humidity
-#include <DHT.h>
+#include "DHT.h"
 #define DHTTYPE DHT22
 
 // SD
-#include <SPI.h>
-#include <SD.h>
+#include "SPI.h"
+#include "SD.h"
 File myFile;
 
 // GPS
-#include <TinyGPS++.h>
-#include <SoftwareSerial.h>
+#include "TinyGPSPlus.h"
+#include "SoftwareSerial.h"
 int GPSBaud = 9600;
 TinyGPSPlus gps;
 
@@ -75,34 +75,40 @@ void setup() {
 
 void loop() {
   // wind info is wack: https://www.youtube.com/watch?v=KHrTqdmYoAk
+
+  // --------------------------------------------------- //
+  // TEMP/HUMIDITY //
+  // --------------------------------------------------- //
   
   // Read humidity
   float h = dht.readHumidity();
   // Read temperature as Fahrenheit (isFahrenheit = true)
   float f = dht.readTemperature(true);
 
-  if (isnan(h) || isnan(t) || isnan(f)) {
+  if (isnan(h) || isnan(f)) {
     Serial.println(F("Failed to read from DHT sensor!"));
   }
 
-  if(!sensor.read_sensor_value(pmBuf,29)){
+  // --------------------------------------------------- //
+  // PM //
+  // --------------------------------------------------- //
+  
+  if(!pmSensor.read_sensor_value(pmBuf,29)){
     u16 value=0;
-    if(NULL==data)
+    if(NULL==pmBuf)
         Serial.println(F("Failed to read from PM sensor!"));;
     for(int i=5;i<8;i++)
     {
-         value = (u16)data[i*2]<<8|data[i*2+1];
+         value = (u16)pmBuf[i*2]<<8|pmBuf[i*2+1];
          // value holds PM1.0, then PM2.5, then PM10
  
     }
   }
 
 
-  // write to SD card
-  if (!SD.begin(10)) {
-    Serial.println("initialization failed!");
-    while (1);
-  }
+  // --------------------------------------------------- //
+  // GPS //
+  // --------------------------------------------------- //
 
   
   if (gpsSerial.available() > 0 && gps.encode(gpsSerial.read())){
@@ -153,6 +159,99 @@ void loop() {
     {
       Serial.println("Not Available");
     }
+  }
+
+  // --------------------------------------------------- //
+  // WIND DIRECTION //
+  // --------------------------------------------------- //
+
+  int windDirVal = analogRead(DIR_PIN);
+
+  if (windDirVal <= 800 && windDirVal >= 770){
+    Serial.println("N");
+  } else if (windDirVal >= 450 && windDirVal <= 480){
+    Serial.println("NE");
+  } else if (windDirVal >= 87 && windDirVal <= 110){
+    Serial.println("E");
+  } else if (windDirVal >= 170 && windDirVal <= 200){
+    Serial.println("SE");
+  } else if (windDirVal >= 270 && windDirVal <= 300){
+    Serial.println("S");
+  } else if (windDirVal >= 620 && windDirVal <= 650){
+    Serial.println("SW");
+  } else if (windDirVal >= 930 && windDirVal <= 960){
+    Serial.println("W");
+  } else if (windDirVal >= 875 && windDirVal <= 905){
+    Serial.println("NW");
+  } else if (windDirVal >= 395 && windDirVal <= 415){
+    Serial.println("N/NE");
+  } else if (windDirVal >= 75 && windDirVal <= 86){
+    Serial.println("E/NE");
+  } else if (windDirVal >= 60 && windDirVal <= 70){
+    Serial.println("E/SE");
+  } else if (windDirVal >= 120 && windDirVal <= 130){
+    Serial.println("S/SE");
+  } else if (windDirVal >= 240 && windDirVal <= 250){
+    Serial.println("S/SW");
+  } else if (windDirVal >= 595 && windDirVal <= 605){
+    Serial.println("W/SW");
+  } else if (windDirVal >= 825 && windDirVal <= 835){
+    Serial.println("W/NW");
+  } else if (windDirVal >= 700 && windDirVal <= 710){
+    Serial.println("N/NW");
+  } else {
+    Serial.println("ERROR");
+  }
+
+  // --------------------------------------------------- //
+  // WIND SPEED //
+  // --------------------------------------------------- //
+  // Need to count the number of times the sensor jumps
+  // between 0 and a positive value. Gives us RPM and
+  // therefore speed.
+  // Code source: https://www.aeq-web.com/arduino-anemometer-wind-sensor/?lang=en
+
+  int start = millis() ;
+    int t = 0;
+    if (!analogRead(SPEED_PIN)){
+      while( !analogRead(SPEED_PIN) && t < 3000)
+      {
+        t = millis() - start ;
+      }
+      while( analogRead(SPEED_PIN) && t < 3000)
+      {
+        t = millis() - start ;
+      }
+    }
+    else {
+      while( analogRead(SPEED_PIN) && t < 3000)
+      {
+        t = millis() - start ;
+      }
+      while( !analogRead(SPEED_PIN) && t < 3000)
+      {
+        t = millis() - start ;
+      }
+    }
+    t = millis() - start ;
+    float windSpeed = 0;
+    if (t >= 3000){
+      windSpeed = 0;
+    }
+    else{
+     windSpeed = (1 /(float)t * 2000) * 1.4912904;
+    }
+    
+  Serial.println(windSpeed);
+
+  // --------------------------------------------------- //
+  // SD CARD //
+  // --------------------------------------------------- //
+
+  // write to SD card
+  if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+    while (1);
   }
   
   myFile = SD.open("data.txt", FILE_WRITE);
