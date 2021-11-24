@@ -2,31 +2,266 @@
 {% block title %} {% endblock %}
 
 {% block main %}
+
 <html>
+  <head>
+    <meta charset="utf-8"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+</head>
+<style>
+  #chart1 {
+    position: absolute;
+    left: 10%;
+    margin-left: -10px;
+    width: 100px;
+    height: 100px;
+  }
+  #chart2 {
+    position: absolute;
+    left: 10%;
+    margin-left: -10px;
+    width: 100px;
+    height: 100px;
+    margin-top:2s0px;
+  }
+  #mySelect {
+
+    margin-top:430px;
+  }
+
+</style>
 <div class="container">
   <div class="row">
     <div class="col">
 
       <h1>PM Dashboard</h1>
       <hr>
-
+      
       <form action="/main" method="POST" enctype="multipart/form-data">
 
         <button type="Upload_file_data" class="btn btn-primary">Upload PM Data</button>
 
       </form>
-      <form action="/dash" method="POST" enctype="multipart/form-data">
-
-        <button type="View Dashboard" class="btn btn-primary">View Dashboard</button>
-
-      </form>
+      <div id="chart1"><canvas id="myChart" width="900" height="400"></canvas></div>
+      <form id="form1" action="/data_submit" method="POST" enctype="multipart/form-data">
+        <select id="mySelect" name = "datapoints">
+          <option disabled selected value> -- select an option -- </option>
+          <option value="Temperature">Temperature</option>
+          <option value="Humidity">Humidity</option>
+          <option value="Wind Speed">Wind Speed</option>
+          <option value="Wind Direction">Wind Direction</option>
+        </select>
+        <input class="btn" type="submit" value="submit">
+     </form>
+      <div id="chart2"><canvas id="myChart2" width="900" height="400"></canvas></div>
       <div id='chart' class='chart'></div>
+      
       <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+      
       <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>-->
-      <script type='text/javascript'>
+      <script >
+        
+        // var labels = ;
+        // console.log(labels);
+        // var values = ;
+        // console.log(values);
+        var chart = new Chart(document.getElementById("myChart"), {
+          type: 'line',
+          data: {
+              labels: {{ label| safe }},
+              datasets:[{
+                  label: "pm 1",
+                  data: {{ value1| safe }},
+                  fill: false,
+                  borderColor: '#fc8403'
+              },{
+                  label: "pm 2.5",
+                  data: {{ value25| safe }},
+                  fill: false,
+                  borderColor: '#fc0367'
+              },{
+                  label: "pm 10",
+                  data: {{ value10| safe }},
+                  fill: false,
+                  borderColor: '#03fc84'
+              }]
+        },
+        options: {
+          responsive: false,
+          scales: {
+            xAxes: [{
+              scaleLabel: {
+                    display: true,
+                    labelString: 'Time'
+            },
+            }],
+            yAxes: [{
+              scaleLabel: {
+                    display: true,
+                    labelString: 'PM Levels'
+                  },
+                }]
+        }
+
+      }
+      });
+      </script>
+      <!-- <script type='text/javascript'>
         var graphs = {{graphJSON | safe}};
         Plotly.plot('chart',graphs,{});
-      </script>
+      </script> -->
+
+    <!--  -->
+    <!--  -->
+    <!-- temp chart -->
+    <script >
+      var flag2 = {{ flag2| safe }};
+      var data_label = "";
+      var y_label = "";
+      switch(flag2) {
+        case 1:
+          data_label = "Temperature";
+          y_label = "Fahrenheit";
+          break;
+        case 2:
+          data_label = "Humidity";
+          y_label = "Humidity %";
+          break;
+        case 3:
+          data_label = "Wind Speed";
+          y_label = "MPH";
+          break;
+        case 4:
+          data_label = "Wind Direction";
+          y_label = "Direction";
+          break;
+      }
+      
+
+      if ({{ flag| safe }} == 0) {
+            var chart = new Chart(document.getElementById("myChart2"), {
+            type: 'line',
+            data: {
+                labels: {{ label| safe }},
+                datasets:[{
+                    label: data_label,
+                    data: {{ valuetemp| safe }},
+                    fill: false,
+                    borderColor: '#fc8403'
+                }]
+          },
+          options: {
+            responsive: false,
+              scales: {
+                xAxes: [{
+                  scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                },
+                }],
+                yAxes: [{
+                  scaleLabel: {
+                        display: true,
+                        labelString: y_label
+                      },
+                    }]
+            }
+            
+        }
+        });
+      } else {
+      // var labels = ;
+      // console.log(labels);
+      // var values = ;
+      // console.log(values);
+    //   var chart = new Chart(document.getElementById("myChart2"), {
+    //     type: 'line',
+    //     data: {
+    //         labels: {{ label| safe }},
+    //         datasets:[{
+    //             label: data_label,
+    //             data: {{ valuetemp| safe }},
+    //             fill: false,
+    //             borderColor: '#fc8403'
+    //         }]
+    //   },
+    //   options: {
+    //     responsive: false
+        
+    // }
+    // });
+    var chart = new Chart(document.getElementById("myChart2"), {
+        type: 'line',
+        data: {
+            labels: {{ label| safe }},
+            datasets:[{
+                label: data_label,
+                data: {{ valuetemp| safe }},
+                fill: false,
+                borderColor: '#fc8403'
+            }]
+      },
+      options: {
+        responsive: false,
+        scales: {
+            xAxes: [{
+              scaleLabel: {
+                    display: true,
+                    labelString: 'Time'
+            },
+
+            }],
+            yAxes: [{
+              scaleLabel: {
+                    display: true,
+                    labelString: 'Wind Direction'
+                  },
+              ticks: {
+                // Include a dollar sign in the ticks
+                callback: function(value, index, values) {
+                  switch(value) {
+                      case 0:
+                        // code block
+                        return "N";
+                      case 1:
+                        // code block
+                        return "S";
+                      case 2:
+                        // code block
+                        return "E";
+                      case 3:
+                        // code block
+                        return "W";
+                      case 4:
+                        // code block
+                        return "SE";
+                      case 5:
+                        // code block
+                        return "SW";
+                      case 6:
+                        // code block
+                        return "NW";
+                      case 7:
+                        // code block
+                        return "NE";
+                    
+                    }
+                }
+              }
+            }]
+
+          }
+      }
+    });
+  }
+    </script>
+    <!-- <script type='text/javascript'>
+      var graphs = {{graphJSON | safe}};
+      Plotly.plot('chart',graphs,{});
+    </script> -->
+
     </div>
   </div>
 

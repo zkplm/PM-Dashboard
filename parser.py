@@ -18,10 +18,37 @@
 
 from datetime import datetime
 import mysql.connector
+import pandas as pd
+import time
+
+
+def find_wind_dir(string_wind):
+    if (string_wind == ' N '):
+        return 0
+    elif string_wind == ' S ':
+        return 1
+    elif string_wind == ' E ':
+        return 2
+    elif string_wind == ' W ':
+        return 3
+    elif string_wind == ' SE ':
+        return 4
+    elif string_wind == ' SW ':
+        return 5
+    elif string_wind == ' NW ':
+        return 6
+    elif string_wind == ' NE ':
+        return 7
 
 
 def file_parser():
-    file = open("Parser/data.txt", "r+")
+    t0 = time.time()
+    df = pd.read_csv("Parser/data.txt", header=None)
+    valid_gps = None
+    latitude = None
+    latitude_dir = None
+    longitude = None
+    longitude_dir = None
     mydb = mysql.connector.connect(
         host="104.197.43.121",
         user="root",
@@ -29,66 +56,31 @@ def file_parser():
         database="PMDATA"
     )
     mycursor = mydb.cursor()
-    lines = file.readlines()
-    data = {}
-    data['time'] = []
-    data['PM1'] = []
-    data['PM2.5'] = []
-    data['PM10'] = []
-    for line in lines:
-        wind_speed = line[0:5]
-        wind_dir = line[6:9]
-        temp = line[10:14]
-        humidity = line[15:17]
-        pm_one = line[18:20]
-
-        data['PM1'].append(int(pm_one))
-        pm_two = line[21:23]
-
-        data['PM2.5'].append(int(pm_two))
-        pm_ten = line[24:26]
-
-        data['PM10'].append(int(pm_ten))
-        cur_time = line[27:33]
-        store_cur_time = line[27:33]
-        # convert time from string to UTC
-        print(cur_time)
-        cur_time = datetime.strptime(cur_time, '%H%M%S')
-        print(cur_time.time())
-        data['time'].append(cur_time.time())
-
-        valid_gps = line[34] == 'A'
-        latitude = line[36:45]
-        latitude_dir = line[46]
-        longitude = line[48:58]
-        longitude_dir = line[59]
-        date = line[73:75] + '/' + line[71:73] + '/' + line[75:77]
-
-        # insert into DB
-        sql = "INSERT INTO PM_Data Values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    data = []
+    i = 1
+    for index, row in df.iterrows():
+        date = row[0]
+        i += 1
+        store_cur_time = str(row[1])
+        humidity = str(row[2])
+        temp = str(row[3])
+        pm_one = str(row[4])
+        pm_two = str(row[5])
+        pm_ten = str(row[6])
+        wind_dir = str(row[7])
+        wind_speed = str(row[8])
+        wind_convert = str(find_wind_dir(wind_dir))
         val = (wind_speed, wind_dir, temp, humidity, pm_one, pm_two, pm_ten, store_cur_time,
-               valid_gps, latitude, latitude_dir, longitude, longitude_dir, date)
-        mycursor.execute(sql, val)
-        mydb.commit()
-        # replace with SQL query
-        # print('-- NEW LINE --')
-        # print('wind_speed = ' + wind_speed)
-        # print('wind_dir = ' + wind_dir)
-        # print('temp = ' + temp)
-        # print('humidity = ' + humidity)
-        # print('pm_one = ' + pm_one)
-        # print('pm_two = ' + pm_two)
-        # print('pm_ten = ' + pm_ten)
-        # print(cur_time.time())
-        # print('valid_gps = ' + str(valid_gps))
-        # print('latitude = ' + latitude)
-        # print('latitude_dir = ' + latitude_dir)
-        # print('longitude = ' + longitude)
-        # print('longitude_dir = ' + longitude_dir)
-        # print('date = ' + date)
-    print(data)
-    file.close()
-    return data
+               valid_gps, latitude, latitude_dir, longitude, longitude_dir, date, wind_convert)
+        data.append(val)
+
+    sql = "INSERT INTO PM_Data Values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    mycursor.executemany(sql, data)
+    mydb.commit()
+    t1 = time.time()
+    str2 = "Parsed " + str(i) + " rows of data."
+    print(str2)
+    print("total time (in seconds) to parse data was:", t1-t0)
 
 
-# file_parser()
+file_parser()
